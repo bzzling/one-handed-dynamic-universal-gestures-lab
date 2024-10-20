@@ -5,6 +5,10 @@ from sklearn.metrics import roc_auc_score, precision_recall_curve, auc
 
 print("libs loaded")
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+print(f"device: {device}")
+
 output_dim = 1  # binary classification for thumbs up or down
 input_dim = 17  # 17 features
 detect_threshold = 0.7  # threshold for classification as a thumbs up
@@ -34,12 +38,12 @@ class LSTM_Model(nn.Module):
         self.fc = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).to(x.device)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).to(x.device)
+        h0 = torch.zeros(self.num_layers, x.size(dim=0), self.hidden_dim).to(device) #initialized hidden state
+        c0 = torch.zeros(self.num_layers, x.size(dim=0), self.hidden_dim).to(device) #initialized cell state
         
-        out, _ = self.lstm(x, (h0, c0))
-        out = self.fc(out[:, -1, :])
-        return out
+        output, states = self.lstm(x, (h0, c0)) # states represents hidden and cell states (not needed)
+        output = self.fc(out[:, -1, :]) # get the last time step's output for each sequence
+        return output
 
 
 def split_feature_label(data):
@@ -81,7 +85,6 @@ def main():
     optimizer = torch.optim.SGD(lstm_model.parameters(), lr=learning_rate)
     iter = 0
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     lstm_model.to(device)
 
     print("about to enter training loop")
