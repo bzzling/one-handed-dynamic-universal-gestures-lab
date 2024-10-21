@@ -14,7 +14,7 @@ input_dim = 17  # 17 features
 detect_threshold = 0.7  # threshold for classification as a thumbs up
 
 SAVE_MODEL_PATH = "trained_model/"
-SAVE_MODEL_FILENAME = "lstm_model_weights.json"
+SAVE_MODEL_FILENAME = "lstm_model_weights_hidden32_160l.json"
 
 
 def save_model(model, path, filename):
@@ -41,9 +41,9 @@ class LSTM_Model(nn.Module):
         h0 = torch.zeros(self.num_layers, x.size(dim=0), self.hidden_dim).to(device) #initialized hidden state
         c0 = torch.zeros(self.num_layers, x.size(dim=0), self.hidden_dim).to(device) #initialized cell state
         
-        output, states = self.lstm(x, (h0, c0)) # states represents hidden and cell states (not needed)
-        output = self.fc(out[:, -1, :]) # get the last time step's output for each sequence
-        return output
+        out, states = self.lstm(x, (h0, c0)) # states represents hidden and cell states (not needed)
+        out = self.fc(out[:, -1, :]) # get the last time step's output for each sequence
+        return out
 
 
 def split_feature_label(data):
@@ -52,11 +52,12 @@ def split_feature_label(data):
     print("features split")
     return X, Y
 
-
 def main():
     print("starting...")
-    train_path = "train_data/train_sequences_0.pt"
-    test_path = "test_data/test_sequences_0.pt"
+    train_path = "train_data/train_sequences_0_160l.pt"
+    test_path = "test_data/test_sequences_0_160l.pt"
+    print(f"train path: {train_path}")
+    print(f"test path: {test_path}")
     train_data = torch.load(train_path, weights_only=False)
     test_data = torch.load(test_path, weights_only=False)
     print("data found")
@@ -79,7 +80,7 @@ def main():
 
     print("data loaded")
     
-    lstm_model = LSTM_Model(input_dim, 100, output_dim)
+    lstm_model = LSTM_Model(input_dim, 32, output_dim)
     criterion = nn.BCEWithLogitsLoss()
     learning_rate = 0.0004
     optimizer = torch.optim.SGD(lstm_model.parameters(), lr=learning_rate)
