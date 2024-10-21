@@ -3,19 +3,16 @@ import torch.nn as nn
 import json
 from sklearn.metrics import roc_auc_score, precision_recall_curve, auc
 
-print("libs loaded")
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-print(f"device: {device}")
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') #device agnostic
 
 output_dim = 1  # binary classification for thumbs up or down
 input_dim = 17  # 17 features
 detect_threshold = 0.7  # threshold for classification as a thumbs up
 
 SAVE_MODEL_PATH = "trained_model/"
-SAVE_MODEL_FILENAME = "lstm_model_weights.json"
-
+SAVE_MODEL_FILENAME = "model_dynamic_weights.json"
+TRAIN_PATH = "train_data/train_sequences_0.pt"
+TEST_PATH = "test_data/test_sequences_0.pt"
 
 def save_model(model, path, filename):
     # Extract the model's state dictionary, convert to JSON serializable format
@@ -26,8 +23,12 @@ def save_model(model, path, filename):
     with open(path + filename, "w") as f:
         json.dump(serializable_state_dict, f)
 
-    print("\n--- Model Training Complete ---")
     print("\nModel weights saved to ", path + filename)
+
+def split_feature_label(data):
+    X = data[:, :, :-1]
+    Y = data[:, -1, -1]
+    return X, Y
 
 class LSTM_Model(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers=1):
@@ -45,28 +46,16 @@ class LSTM_Model(nn.Module):
         out = self.fc(out[:, -1, :]) # get the last time step's output for each sequence
         return out
 
-
-def split_feature_label(data):
-    X = data[:, :, :-1]
-    Y = data[:, -1, -1]
-    print("features split")
-    return X, Y
-
 def main():
-    print("starting...")
-    train_path = "train_data/train_sequences_0.pt"
-    test_path = "test_data/test_sequences_0.pt"
-    print(f"train path: {train_path}")
-    print(f"test path: {test_path}")
-    train_data = torch.load(train_path, weights_only=False)
-    test_data = torch.load(test_path, weights_only=False)
-    print("data found")
+    print(f"Train path: {TRAIN_PATH}")
+    print(f"Test path: {TEST_PATH}")
+    train_data = torch.load(TRAIN_PATH, weights_only=False)
+    test_data = torch.load(TEST_PATH, weights_only=False)
+
     batch_size = 64
     n_iters = len(train_data) * 5  # 5 epochs
     num_epochs = int(n_iters / (len(train_data) / batch_size))
-    
-    # Assuming the data shape is (num_sequences, sequence_length, num_features)
-    # and the last feature in each sequence is the label
+
     X_train, y_train = split_feature_label(train_data)
     X_test, y_test = split_feature_label(test_data)
     
@@ -77,16 +66,12 @@ def main():
     test_loader = torch.utils.data.DataLoader(
         list(zip(X_test, y_test)), shuffle=True, batch_size=64
     )
-
-    print("data loaded")
     
-    lstm_model = LSTM_Model(input_dim, 32, output_dim)
+    lstm_model = LSTM_Model(input_dim, 32, output_dim).to(device)
     criterion = nn.BCEWithLogitsLoss()
     learning_rate = 0.0004
     optimizer = torch.optim.SGD(lstm_model.parameters(), lr=learning_rate)
     iter = 0
-
-    lstm_model.to(device)
 
     print("about to enter training loop")
 
@@ -129,6 +114,8 @@ def main():
                             iter, loss.item(), accuracy, auc_roc, auc_pr
                         )
                     )
+
+    print("\n--- Model Training Complete ---")
     # Save the model
     save_model(lstm_model, SAVE_MODEL_PATH, SAVE_MODEL_FILENAME)
 
