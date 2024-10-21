@@ -14,7 +14,7 @@ input_dim = 17  # 17 features
 detect_threshold = 0.7  # threshold for classification as a thumbs up
 
 SAVE_MODEL_PATH = "trained_model/"
-SAVE_MODEL_FILENAME = "lstm_model_weights_hidden32_160l.json"
+SAVE_MODEL_FILENAME = "lstm_model_weights.json"
 
 
 def save_model(model, path, filename):
@@ -54,8 +54,8 @@ def split_feature_label(data):
 
 def main():
     print("starting...")
-    train_path = "train_data/train_sequences_0_160l.pt"
-    test_path = "test_data/test_sequences_0_160l.pt"
+    train_path = "train_data/train_sequences_0.pt"
+    test_path = "test_data/test_sequences_0.pt"
     print(f"train path: {train_path}")
     print(f"test path: {test_path}")
     train_data = torch.load(train_path, weights_only=False)

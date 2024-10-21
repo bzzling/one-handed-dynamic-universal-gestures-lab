@@ -1,7 +1,7 @@
 import torch
 
 FROM = "test_data/test_0.pt"
-DESTINATION = "test_data/test_sequences_0_160l.pt"
+DESTINATION = "test_data/test_sequences_0.pt"
 
 def create_sequences(data, seq_length):
     sequences = []
@@ -12,5 +12,5 @@ def create_sequences(data, seq_length):
 
 if __name__ == "__main__":
     data = torch.load(f'{FROM}')
-    sequences = create_sequences(data, seq_length=160)
+    sequences = create_sequences(data, seq_length=10)
     torch.save(sequences, f'{DESTINATION}')
