@@ -25,6 +25,7 @@ def split():
     data_files = os.listdir("data")
     
     print("Loading data files")
+    print(data_files)
     full_dataset = []
     train = []
     for dataset_name in data_files:
